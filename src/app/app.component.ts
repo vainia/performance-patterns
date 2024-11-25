@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, NgZone, OnInit } from '@angular/core';
 
 import * as Plotly from 'plotly.js-dist-min';
 
@@ -6,6 +6,7 @@ import { ListGenerator, EmployeeData } from './shared/list-generator.service';
 
 import { Rnd } from './data/rnd-70-27-30';
 import { Sales } from './data/sales-70-27-30';
+import { List } from 'immutable';
 
 const NumRange: [number, number] = [23, 28];
 
@@ -20,36 +21,38 @@ const NumRange: [number, number] = [23, 28];
       <app-employee-list
         [data]="salesList"
         department="Sales"
-        (add)="add(salesList, $event)"
-        (remove)="remove(salesList, $event)"
+        (add)="salesList = add(salesList, $event)"
+        (remove)="salesList = remove(salesList, $event)"
       ></app-employee-list>
 
       <app-employee-list
         [data]="rndList"
         department="R&D"
-        (add)="add(rndList, $event)"
-        (remove)="remove(rndList, $event)"
+        (add)="rndList = add(rndList, $event)"
+        (remove)="rndList = remove(rndList, $event)"
       ></app-employee-list>
     </section>
   `,
-  styleUrls: ['app.component.css']
+  styleUrls: ['app.component.css'],
 })
 export class AppComponent implements OnInit {
-  salesList: EmployeeData[] = Sales;
-  rndList: EmployeeData[] = Rnd;
+  salesList = List(Sales);
+  rndList = List(Rnd);
   label = '';
 
-  constructor(private generator: ListGenerator) {}
+  constructor(private generator: ListGenerator, private zone: NgZone) {}
 
   ngOnInit() {
-    const data: [{x: string[], y: number[], type: 'bar'}] = [{
-      x: [],
-      y: [],
-      type: 'bar'
-    }];
+    const data: [{ x: string[]; y: number[]; type: 'bar' }] = [
+      {
+        x: [],
+        y: [],
+        type: 'bar',
+      },
+    ];
 
     const values = new Map<number, number>();
-    this.salesList.concat(this.rndList).forEach(employee => {
+    this.salesList.concat(this.rndList).forEach((employee) => {
       if (values.has(employee.num)) {
         values.set(employee.num, values.get(employee.num)! + 1);
       } else {
@@ -62,14 +65,17 @@ export class AppComponent implements OnInit {
       data[0].y.push(entity[1]);
     }
 
-    Plotly.newPlot('chart', data);
+    this.zone.runOutsideAngular(() => Plotly.newPlot('chart', data));
   }
 
-  add(list: EmployeeData[], name: string) {
-    return list.unshift({ label: name, num: this.generator.generateNumber(NumRange) });
+  add(list: List<EmployeeData>, name: string) {
+    return list.unshift({
+      label: name,
+      num: this.generator.generateNumber(NumRange),
+    });
   }
 
-  remove(list: EmployeeData[], node: EmployeeData) {
+  remove(list: List<EmployeeData>, node: EmployeeData) {
     return list.splice(list.indexOf(node), 1);
   }
 }

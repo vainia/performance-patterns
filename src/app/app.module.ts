@@ -12,6 +12,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
   imports: [BrowserModule, EmployeeListModule, BrowserAnimationsModule],
   providers: [ListGenerator],
   declarations: [AppComponent],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
 export class AppModule {}
